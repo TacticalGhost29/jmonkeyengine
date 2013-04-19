@@ -599,8 +599,12 @@ public class MeshLoader extends DefaultHandler implements AssetLoader {
         }
     }
 
-    private void startSubmeshName(String indexStr, String nameStr) {
-        int index = Integer.parseInt(indexStr);
+    private void startSubmeshName(String indexStr, Strif (geoms.size() >= index) {
+            logger.log(Level.WARNING, "Submesh name index is larger than number of geometries: {0} >= {1}",
+                    new Object[]{index, geoms.size()});
+        } else {
+            geoms.get(index).setName(nameStr);
+        } Integer.parseInt(indexStr);
         geoms.get(index).setName(nameStr);
     }
 
@@ -898,11 +902,4 @@ public class MeshLoader extends DefaultHandler implements AssetLoader {
             IOException ioEx = new IOException("Error while parsing Ogre3D mesh.xml");
             ioEx.initCause(ex);
             throw ioEx;
-        } catch (ParserConfigurationException ex) {
-            IOException ioEx = new IOException("Error while parsing Ogre3D mesh.xml");
-            ioEx.initCause(ex);
-            throw ioEx;
         }
-
-    }
-}
