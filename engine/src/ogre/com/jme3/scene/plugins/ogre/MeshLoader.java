@@ -72,7 +72,6 @@ public class MeshLoader extends DefaultHandler implements AssetLoader {
 
     private static final Logger logger = Logger.getLogger(MeshLoader.class.getName());
     public static boolean AUTO_INTERLEAVE = true;
-    public static boolean HARDWARE_SKINNING = false;
     private static final Type[] TEXCOORD_TYPES =
             new Type[]{
         Type.TexCoord,
@@ -370,25 +369,27 @@ public class MeshLoader extends DefaultHandler implements AssetLoader {
         // current mesh will have bone assigns
         //int vertCount = mesh.getVertexCount();
         // each vertex has
-        // - 4 bone weights
-        // - 4 bone indices
-        if (HARDWARE_SKINNING) {
-            weightsFloatData = BufferUtils.createFloatBuffer(vertCount * 4);
-            indicesData = BufferUtils.createByteBuffer(vertCount * 4);
-        } else {
-            // create array-backed buffers if software skinning for access speed
-            weightsFloatData = FloatBuffer.allocate(vertCount * 4);
-            indicesData = ByteBuffer.allocate(vertCount * 4);
+        /// create array-backed buffers for software skinning for access speed
+        weightsFloatData = FloatBuffer.allocate(vertCount * 4);
+        indicesData = ByteBuffer.allocate(vertCount * 4);cesData = ByteBuffer.allocate(vertCount * 4);
         }
 
         VertexBuffer weights = new VertexBuffer(Type.BoneWeight);
-        VertexBuffer indices = new VertexBuffer(Type.BoneIndex);
-
-        Usage usage = HARDWARE_SKINNING ? Usage.Static : Usage.CpuOnly;
-        weights.setupData(usage, 4, Format.Float, weightsFloatData);
-        indices.setupData(usage, 4, Format.UnsignedByte, indicesData);
-
+        VertexBuffeweights.setupData(Usage.CpuOnly, 4, Format.Float, weightsFloatData);
+        indices.setupData(Usage.CpuOnly, 4, Format.UnsignedByte, indicesData);
+        
         mesh.setBuffer(weights);
+        mesh.setBuffer(indices);
+        
+        //creating empty buffers for HW skinning 
+        //the buffers will be setup if ever used.
+        VertexBuffer weightsHW = new VertexBuffer(Type.HWBoneWeight);
+        VertexBuffer indicesHW = new VertexBuffer(Type.HWBoneIndex);
+        //setting usage to cpuOnly so that the buffer is not send empty to the GPU
+        indicesHW.setUsage(Usage.CpuOnly);
+        weightsHW.setUsage(Usage.CpuOnly);
+        mesh.setBuffer(weightsHW);
+        mesh.setBuffer(indicesHWmesh.setBuffer(weights);
         mesh.setBuffer(indices);
     }
 
@@ -769,39 +770,26 @@ public class MeshLoader extends DefaultHandler implements AssetLoader {
             Mesh m = g.getMesh();
             
             // New code for buffer extract
-            if (sharedMesh != null && usesSharedMesh.get(i)) {
-                m.extractVertexData(sharedMesh);
-            }
-            
-            // Old code for buffer sharer
-            //if (sharedMesh != null && isUsingSharedVerts(g)) {
+            if (sharedMesh != null && usesSharededVerts(g)) {
             //    m.setBound(sharedMesh.getBound().clone());
             //}
             model.attachChild(geoms.get(i));
         }
 
-        // Do not attach shared geometry to the node!
-
-        if (animData != null) {
-            // This model uses animation
-
-            // Old code for buffer sharer
-            // generate bind pose for mesh
-            // ONLY if not using shared geometry
-            // This includes the shared geoemtry itself actually
-            //if (sharedMesh != null) {
+        // Do not attach shared geometull) {
             //    sharedMesh.generateBindPose(!HARDWARE_SKINNING);
             //}
 
-            for (int i = 0; i < geoms.size(); i++) {
-                Geometry g = geoms.get(i);
-                Mesh m = geoms.get(i).getMesh();
-                
-                m.generateBindPose(!HARDWARE_SKINNING);
-                
-                // Old code for buffer sharer
-                //boolean useShared = isUsingSharedVerts(g);
-                //if (!useShared) {
+            for (int i = 0; i < geoms.size                
+                //FIXME the parameter is now useless.
+                //It was !HADWARE_SKINNING before, but since toggleing 
+                //HW skinning does not happen at load time it was always true.
+                //We should use something similar as for the HWBoneIndex and 
+                //HWBoneWeight : create the vertex buffers empty so that they 
+                //are put in the cache, and really populate them the first time 
+                //software skinning is used on the mesh.
+                m.generateBindPose(true);
+  //if (!useShared) {
                     // create bind pose
                     //m.generateBindPose(!HARDWARE_SKINNING);
                 //}
